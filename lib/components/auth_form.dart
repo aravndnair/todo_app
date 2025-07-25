@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'ios_text_field.dart';
 import 'ios_button.dart';
 
@@ -39,20 +40,34 @@ class _AuthFormState extends State<AuthForm> {
         _isLoading = true;
       });
 
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 1500));
-
-      final data = {
-        'email': _emailController.text,
-        'password': _passwordController.text,
-        if (widget.isSignUp) 'confirmPassword': _confirmPasswordController.text,
-      };
-
-      widget.onSubmit(data);
-
-      setState(() {
-        _isLoading = false;
-      });
+      try {
+        if (widget.isSignUp) {
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: _emailController.text,
+            password: _passwordController.text,
+          );
+        } else {
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: _emailController.text,
+            password: _passwordController.text,
+          );
+        }
+        widget.onSubmit({
+          'email': _emailController.text,
+          'password': _passwordController.text,
+        });
+      } on FirebaseAuthException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'An error occurred.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
